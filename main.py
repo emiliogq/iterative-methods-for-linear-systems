@@ -3,8 +3,8 @@ import numpy as np;
 import math as m;
 
 # np.set_printoptions(precision=8)
-import fractions
-np.set_printoptions(formatter={'all':lambda x: str(fractions.Fraction(x).limit_denominator())})
+# import fractions
+# np.set_printoptions(formatter={'all':lambda x: str(fractions.Fraction(x).limit_denominator())})
 
 def diagonal(matrix):
     d = np.diag(np.diag(matrix))
@@ -39,47 +39,55 @@ def lower(matrix):
     return l
 
 def get_jacobi_iter_matrix (matrix):
-    print("-------------------")
-    print("Jacobi iterative matrix (B)")
-    print("-------------------")
+    # print("-------------------")
+    # print("Jacobi iterative matrix (B)")
+    # print("-------------------")
     d_inverse = inverse(diagonal(matrix)) 
     l_u = lower(matrix)+upper(matrix)
     b = np.dot(-1 * d_inverse,(l_u))
-    print("Jacobi B = -D^-1·(L+U)")
-    print("")
-    print(b)
-    print("")
+    # print("Jacobi B = -D^-1·(L+U)")
+    # print("")
+    # print(b)
+    # print("")
     return b
 
 def get_jacobi_iter_vector(matrix,b):
-    print("-------------------")
-    print("Jacobi iterative array (c)")
-    print("-------------------")
+    # print("-------------------")
+    # print("Jacobi iterative array (c)")
+    # print("-------------------")
     c = np.dot(inverse(diagonal(matrix)), b)
-    print(c)
+    # print(c)
     return c
 
 def get_gauss_seidel_iter_matrix(matrix):
-    print("-------------------")
-    print("Gauss-Seidel iterative matrix (B)")
-    print("-------------------")
+    # print("-------------------")
+    # print("Gauss-Seidel iterative matrix (B)")
+    # print("-------------------")
     d = diagonal(matrix)
     l = lower(matrix)
     u = upper(matrix)
-    b = np.dot((-1 * inverse(l+d)),u)
+    # print("")
+    # print("(L+D)^-1: ")
+    inverse_ld = -1 * inverse(l+d)
+    # print(inverse_ld)
+    b = np.dot(inverse_ld,u)
     np.savetxt("b_gauss.csv",b,delimiter=",")
-    print("Gauss-Seidel B = -((L+D)^-1)·U")
-    print("")
-    print(b)
-    print("")
+    # print("")
+    # print("Gauss-Seidel B = -((L+D)^-1)·U")
+    # print("")
+    # print(b)
+    # print("")
     return b
 
 def get_gauss_seidel_iter_vector(A, b):
-    print("-------------------")
-    print("Gauss-Seidel iterative array (c)")
-    print("-------------------")
+    # print("-------------------")
+    # print("Gauss-Seidel iterative array (C)")
+    # print("-------------------")
     c = np.dot(inverse(lower(A)+diagonal(A)), b) 
-    print(c)
+    # print("")
+    # print("C = (L+D)^-1·b")
+    # print(c)
+    # print("")
     return c
 
 def eigval(matrix):
@@ -92,10 +100,10 @@ def eigval(matrix):
 
 def spectral_radius(eigen_values):
     sp = np.max(np.absolute(eigen_values))
-    print("spectral radius")
-    print("")
-    print(sp)
-    print("")
+    # print("spectral radius")
+    # print("")
+    # print(sp)
+    # print("")
     return sp
 
 def generate_square_matrix(p, size=10):
@@ -105,112 +113,147 @@ def generate_square_matrix(p, size=10):
     A = u+d+l
     return A
 
-def jacobi(A,b,end_condition, x = np.zeros((10,1)), x_start=0):
-    print("-------------------")
-    print("Jacobi Method")
-    print("-------------------") 
-    B = get_jacobi_iter_matrix(A)
-    c = get_jacobi_iter_vector(A,b)                                                                                                                                             
-    iterative(A, B,x,b,c,end_condition, x_start)
-
-def gauss_seidel(A,b,end_condition, x = np.zeros((10,1)), x_start = 0):
-    B = get_gauss_seidel_iter_matrix(A)
-    c = get_gauss_seidel_iter_vector(A, b)
-    iterative(A, B,x,b, c, end_condition, x_start)
-
-def iterative(A, B,x, b, c, end_condition, x_start=0):
-    k=int(0)
-    r = (b - np.dot(A,x))
-    e = np.linalg.norm(r)
-    min_e = e
-    min_k = k
-    min_x = x
-    while not end_condition(k,e):       
-        print("x^"+str(k))
+def print_iteration_variable( ivar : tuple):
+        print(ivar[0])
         print("----------")
         print("")
-        print(x[x_start:])
+        print(ivar[1])
         print("")
-        print("r^"+str(k))
         print("----------")
         print("")
-        print(r[x_start:])
-        print("")
-        print("E^"+str(k))
-        print("----------")
-        print("")
-        print(e)
-        print("")
 
-        x = (np.dot(B,x)+c)
-        r = (b - np.dot(A,x))
-        e = np.linalg.norm(r)
+def iterative(B, x, c, end_condition):
+    k = int(0)
+    x_s = np.array([(1, 2, -1, 1)]).transpose()
+    x_prev = x
+    norm_x_s = np.linalg.norm(x_s)
+    approximated_relative_error = int(1)
+    previous_relative_error = relative_error = np.linalg.norm(x - x_s) / norm_x_s
 
-        k=k+1
+    ivars = [
+        ("x^"+str(k), x), 
+        ("x^s", x_s), 
+        # ("x^"+str(k-1), x_prev), 
+        ("E^"+str(k)+"  = || x^"+str(k)+" - x^("+str(k-1)+")|| / || x^"+str(k)+" ||", approximated_relative_error),
+        # ("E^"+str(k-1), previous_relative_error) 
+        ("e^"+str(k)+" = || x^"+str(k)+" - x_s || / || x_s ||", relative_error), 
+        ("e^"+str(k-1), previous_relative_error)
+    ]
+    
+    for ivar in ivars:
+        print_iteration_variable(ivar)
+    
+    while not end_condition(k,relative_error):       
+
+        x_prev = x
+        previous_relative_error = relative_error
+        # x^(k+1) = B · x^(k) + c
+        x = ( np.dot(B,x) + c )
+        # Ex 3e
+        approximated_relative_error = np.linalg.norm( x - x_prev) / np.linalg.norm(x)
+        
+        relative_error = np.linalg.norm(x - x_s) / norm_x_s
+        k = k + 1
+
+        ivars = [
+            ("x^"+str(k), x), 
+            ("x^s", x_s), 
+            # ("x^"+str(k-1), x_prev), 
+            ("E^"+str(k)+"  = || x^"+str(k)+" - x^("+str(k-1)+")|| / || x^"+str(k)+" ||", approximated_relative_error),
+            # ("E^"+str(k-1), previous_relative_error) 
+            ("e^"+str(k)+" = || x^"+str(k)+" - x_s || / || x_s ||", relative_error), 
+            ("e^"+str(k-1), previous_relative_error)
+        ]
+        
+        for ivar in ivars:
+            print_iteration_variable(ivar)
+        
 
 def estimate_iterations(spectral_radius, order_error):
-    print("Iterations (k)")
-    print("-----------------")
-    print("")
-    k = (order_error - m.log(0.5,10)) / -m.log(spectral_radius, 10)
-    print("k >= "+str(k))
-
-def exercise_2():
-    print("EX 2")
-    print("-----------")
-    print("")
-    A = np.array(
-        [(6, 2, 0),
-        (2, 3, 0),
-        (1, -10, 3)
-        ]
-    )
-
-    iter_matrix = get_jacobi_iter_matrix(A)
-    sp = spectral_radius( eigval(iter_matrix) )
-    estimate_iterations(sp, 4.0)
-   
-
-    iter_matrix = get_gauss_seidel_iter_matrix(A)
-    sp = spectral_radius( eigval(iter_matrix) )
-    estimate_iterations(sp, 4.0)
-
+    # print("Iterations (k)")
+    # print("-----------------")
+    # print("")
+    k = (-(m.log(0.5,10)) + order_error) / -m.log(spectral_radius, 10)
+    # print("k >= "+str(k))
 
 def exercise_3():
     print("EX 3")
     print("-----------")
     print("")
-    b = np.zeros((10,1))
-    b[0] = 1
+    A = np.array(
+        [(10, -1, 2, 0),
+        (-1, 11, -1, 3),
+        (2,-1,10,-1),
+        (0, 3,-1, 8)
+        ]
+    )
+    b = np.array([(6, 25, -11, 15)]).transpose()
+    x = np.zeros((4,1))
+
+    print("3a")
+    print("-----------")
+    print("Jacobi iterative matrix (B)")
+    print("-------------------")
+    B_J = get_jacobi_iter_matrix(A)
+
+    print("-----------")
+    print("Jacobi iterative array (C)")
+    print("-------------------")
+    C_J = get_jacobi_iter_vector(A, b)
     
-    print("3a and 3b (Begin)")
     print("-----------")
-    matrix = generate_square_matrix(26)
-    end_condition = lambda k,e : k <= 4
-    jacobi(matrix, b, end_condition, x_start=6)
-    gauss_seidel(matrix,b,end_condition,x_start=6)
-
-    print("-----------")
-    print("3a and 3b (End)")
-
-    print("3c (Begin)")
-    print("-----------")
-    euclidian_limit = m.pow(10,-10)
-    end_condition = lambda k,e : k >= 100 or e <= euclidian_limit
-    jacobi(matrix,b,end_condition, x_start=0)
-    gauss_seidel(matrix,b,end_condition, x_start=0)
-    print("-----------")
-    print("3c (End)")
-
+    print("Gauss-Seidel iterative Matrix (B)")
+    print("-------------------")
     
-    print("3d (Begin)")
+    B_GS = get_gauss_seidel_iter_matrix(A)
     print("-----------")
-    matrix = generate_square_matrix(75)
-    jacobi(matrix,b,end_condition, x_start=0)
-    gauss_seidel(matrix,b,end_condition, x_start=0)
+    print("Gauss-Seidel iterative array (C)")
+    print("-------------------")
+    C_GS = get_gauss_seidel_iter_vector(A,b)
+
     # print("-----------")
-    # print("3c (End)")
 
-# exercise_2()
+    # print("3b")
+    # print("-----------")
+    # spectral_radius_jacobi = spectral_radius( eigval(B_J) )
+    # spectral_radius_gs = spectral_radius( eigval(B_GS) )
+    # print("-----------")
+    
+    # print("3c")
+    # print("-----------")
+    # estimate_iterations(spectral_radius_jacobi, 5.0)
+    # estimate_iterations(spectral_radius_gs, 5.0)
+    
+    print("-----------")
+    print("3d limited by iterations")
+    print("-----------")
+
+    end_condition = lambda k,e : k == 15
+    iterative(B_J, x, C_J, end_condition)
+    end_condition = lambda k,e : k == 6
+    iterative(B_GS, x, C_GS, end_condition)
+   
+    print("-----------")
+
+    print("3d limited by error")
+    print("-----------")
+    
+    euclidian_limit = 0.5 * m.pow(10,-5)
+    end_condition = lambda k,e : e <= euclidian_limit
+    iterative(B_J, x, C_J, end_condition)
+    iterative(B_GS, x, C_GS, end_condition)
+    print("-----------")
+
+    # print("3e")
+    # print("-----------")
+
+    # euclidian_limit = 0.5 * m.pow(10,-11)
+    # end_condition = lambda k,e : e <= euclidian_limit
+    # iterative(B_J, x, C_J, end_condition)
+    # iterative(B_GS, x, C_GS, end_condition)
+    
+    # print("-----------")
+
+   
 
 exercise_3()
